@@ -37,7 +37,7 @@ class LLMFactory:
         model = AutoModelForCausalLM.from_pretrained(
             config.model_name,
             device_map=config.device_map,
-            torch_dtype=dtype,  # Use converted dtype
+            torch_dtype=dtype,
             trust_remote_code=config.trust_remote_code,
             cache_dir=config.cache_dir
         )

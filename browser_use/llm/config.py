@@ -14,4 +14,4 @@ class LLMConfig:
     top_p: float = 0.95
     repetition_penalty: float = 1.15
     trust_remote_code: bool = True
-    cache_dir: Optional[str] = None 
+    cache_dir: Optional[str] = None

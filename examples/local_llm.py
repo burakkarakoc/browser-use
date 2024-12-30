@@ -11,8 +11,10 @@ async def main():
     # Configure your LLM
     config = LLMConfig(
         model_name="mistralai/Mistral-7B-Instruct-v0.2",
-        model_type="hf_pipeline",  # or "vllm"
-        cache_dir="./models"  # Cache models locally
+        model_type="hf_pipeline",  # or "vllm" if you have CUDA
+        device_map="auto",         # Will use GPU if available
+        torch_dtype="float16",     # Use half precision to save memory
+        cache_dir="./models"
     )
     
     # Create LLM instance
