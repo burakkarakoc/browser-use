@@ -23,22 +23,19 @@ class LLMFactory:
     @staticmethod
     def _create_hf_pipeline(config: LLMConfig) -> HuggingFacePipeline:
         """Create a HuggingFace pipeline LLM"""
-        # Convert dtype if string
-        dtype = config.torch_dtype
-        if isinstance(dtype, str) and dtype != "auto":
-            dtype = getattr(torch, dtype)
-        
         try:
             tokenizer = AutoTokenizer.from_pretrained(
                 config.model_name,
                 cache_dir=config.cache_dir,
-                trust_remote_code=config.trust_remote_code
+                trust_remote_code=config.trust_remote_code,
+                padding_side="left"
             )
+            tokenizer.pad_token = tokenizer.eos_token
             
             model = AutoModelForCausalLM.from_pretrained(
                 config.model_name,
                 device_map=config.device_map,
-                torch_dtype=dtype,
+                torch_dtype=config.torch_dtype,
                 trust_remote_code=config.trust_remote_code,
                 cache_dir=config.cache_dir
             )
@@ -51,10 +48,15 @@ class LLMFactory:
                 temperature=config.temperature,
                 top_p=config.top_p,
                 repetition_penalty=config.repetition_penalty,
-                return_full_text=True
+                return_full_text=True,
+                do_sample=True,
+                pad_token_id=tokenizer.eos_token_id
             )
             
-            return HuggingFacePipeline(pipeline=pipe)
+            return HuggingFacePipeline(
+                pipeline=pipe,
+                model_kwargs={"temperature": config.temperature}
+            )
         except Exception as e:
             raise RuntimeError(f"Failed to initialize HuggingFace pipeline: {str(e)}")
 
