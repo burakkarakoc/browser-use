@@ -65,7 +65,7 @@ https://github.com/user-attachments/assets/171fb4d6-0355-46f2-863e-edb04a828d04
 
 <br/><br/>
 
-Prompt: Find flights on kayak.com from Zurich to Beijing from 25.12.2024 to 02.02.2025. 
+Prompt: Find flights on kayak.com from Zurich to Beijing from 25.12.2024 to 02.02.2025.
 
 ![flight search 8x 10fps](https://github.com/user-attachments/assets/ea605d4a-90e6-481e-a569-f0e0db7e6390)
 
@@ -231,3 +231,132 @@ Feel free to join the [Discord](https://link.browser-use.com/discord) for discus
   <b>Star ⭐ this repo if you find it useful!</b><br>
   Made with ❤️ by the Browser-Use team
 </div>
+
+## Using Local LLMs
+
+Browser Use supports both cloud-based and local LLMs. You can use models from Hugging Face or run them efficiently with vLLM.
+
+### Quick Start with Local LLMs
+
+```python
+from browser_use import Agent
+from browser_use.llm.config import LLMConfig
+from browser_use.llm.factory import LLMFactory
+
+# Configure your local LLM
+config = LLMConfig(
+    model_name="mistralai/Mistral-7B-Instruct-v0.2",  # Any HF model
+    model_type="hf_pipeline",  # "hf_pipeline" or "vllm"
+    cache_dir="./models"  # Cache models locally
+)
+
+# Create agent with local LLM
+async def main():
+    try:
+        llm = LLMFactory.create_llm(config)
+        agent = Agent(
+            task="Search Google for 'OpenAI' and tell me the title",
+            llm=llm
+        )
+        await agent.run()
+    except Exception as e:
+        print(f"Error: {e}")
+
+asyncio.run(main())
+```
+
+### Advanced Configuration
+
+You can customize the LLM behavior:
+
+```python
+config = LLMConfig(
+    model_name="TheBloke/Llama-2-7B-Chat-GGUF",
+    model_type="hf_pipeline",
+    device_map="auto",          # Device placement strategy
+    torch_dtype="float16",      # Precision (float16, float32, etc.)
+    max_new_tokens=2048,        # Max response length
+    temperature=0.1,            # Response randomness
+    top_p=0.95,                # Nucleus sampling
+    repetition_penalty=1.15,    # Avoid repetition
+    cache_dir="./models"        # Local model cache
+)
+```
+
+### Using vLLM for Better Performance
+
+vLLM offers significant speedups through optimized inference:
+
+```python
+config = LLMConfig(
+    model_name="mistralai/Mistral-7B-Instruct-v0.2",
+    model_type="vllm",  # Use vLLM backend
+    max_new_tokens=2048,
+    temperature=0.1,
+    top_p=0.95
+)
+
+# Note: vLLM requires CUDA GPU
+```
+
+### Supported Model Types
+
+1. HuggingFace Pipeline (`"hf_pipeline"`):
+
+   - Any model from HuggingFace Hub
+   - Supports both CPU and GPU
+   - More flexible but potentially slower
+
+2. vLLM (`"vllm"`):
+   - Requires CUDA GPU
+   - Significantly faster inference
+   - Limited to models supported by vLLM
+
+### Example Use Cases
+
+1. Basic Web Search:
+
+```python
+config = LLMConfig(
+    model_name="mistralai/Mistral-7B-Instruct-v0.2",
+    model_type="hf_pipeline"
+)
+llm = LLMFactory.create_llm(config)
+agent = Agent(
+    task="Go to example.com and extract the main heading",
+    llm=llm
+)
+await agent.run()
+```
+
+2. Multi-Tab Browsing:
+
+```python
+from browser_use import Browser, BrowserConfig
+
+browser = Browser(config=BrowserConfig(headless=False))
+async with await browser.new_context() as context:
+    agent = Agent(
+        task="Open 3 tabs with different news websites and summarize headlines",
+        llm=LLMFactory.create_llm(config),
+        browser_context=context
+    )
+    await agent.run()
+```
+
+### Error Handling
+
+The factory provides clear error messages for common issues:
+
+- CUDA not available for vLLM
+- Model loading failures
+- Invalid configurations
+
+### Tips for Best Performance
+
+1. Use vLLM when possible for faster inference
+2. Cache models locally using `cache_dir`
+3. Use lower precision (float16) for larger models
+4. Consider device placement with `device_map`
+
+For more examples, see the [examples/local_llm.py](examples/local_llm.py) file.
