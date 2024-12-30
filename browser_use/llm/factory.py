@@ -1,6 +1,6 @@
 from typing import Union
 import torch
-from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
+from langchain_huggingface import HuggingFacePipeline
 from langchain_community.llms.vllm import VLLM
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from .config import LLMConfig
@@ -28,31 +28,35 @@ class LLMFactory:
         if isinstance(dtype, str) and dtype != "auto":
             dtype = getattr(torch, dtype)
         
-        tokenizer = AutoTokenizer.from_pretrained(
-            config.model_name,
-            cache_dir=config.cache_dir,
-            trust_remote_code=config.trust_remote_code
-        )
-        
-        model = AutoModelForCausalLM.from_pretrained(
-            config.model_name,
-            device_map=config.device_map,
-            torch_dtype=dtype,
-            trust_remote_code=config.trust_remote_code,
-            cache_dir=config.cache_dir
-        )
-        
-        pipe = pipeline(
-            "text-generation",
-            model=model,
-            tokenizer=tokenizer,
-            max_new_tokens=config.max_new_tokens,
-            temperature=config.temperature,
-            top_p=config.top_p,
-            repetition_penalty=config.repetition_penalty
-        )
-        
-        return HuggingFacePipeline(pipeline=pipe)
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(
+                config.model_name,
+                cache_dir=config.cache_dir,
+                trust_remote_code=config.trust_remote_code
+            )
+            
+            model = AutoModelForCausalLM.from_pretrained(
+                config.model_name,
+                device_map=config.device_map,
+                torch_dtype=dtype,
+                trust_remote_code=config.trust_remote_code,
+                cache_dir=config.cache_dir
+            )
+            
+            pipe = pipeline(
+                "text-generation",
+                model=model,
+                tokenizer=tokenizer,
+                max_new_tokens=config.max_new_tokens,
+                temperature=config.temperature,
+                top_p=config.top_p,
+                repetition_penalty=config.repetition_penalty,
+                return_full_text=True
+            )
+            
+            return HuggingFacePipeline(pipeline=pipe)
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize HuggingFace pipeline: {str(e)}")
 
     @staticmethod
     def _create_vllm(config: LLMConfig) -> VLLM:
